@@ -1,7 +1,7 @@
 import random
 
-# instanceSizes=range(50,501,50)
-instanceSizes = [50]
+instanceSizes=range(50,501,50)
+# instanceSizes = [50]
 
 density = 5 
 # how many tasks at average start at the same quant of time
@@ -23,7 +23,7 @@ def generateInstance(n):
     return tasks
 
 def save(n,instance):
-    f=open(str(n)+'.txt','w+')
+    f=open('in132289_'+str(n)+'.txt','w+')
     f.write(str(n)+'\n')
     for i in instance:
         f.write(i+'\n')
