@@ -2,28 +2,25 @@
 #include <vector>
 #include <fstream>
 #include <math.h>
+#include <chrono>
+#include <algorithm>
 
 using namespace std;
 ifstream instanceFile;
-ifstream mySolutionFile;
 ofstream solutionFile;
-void print1dVector(vector<int> vec)
+void print1dVector(vector<int> vec, string endline=" ")
 {
-    for (auto const &v : vec)
-    {
-        cout << v << " ";
-        cout << endl;
-    }
-}
-void print2dVector(vector<vector<int>> vec)
-{
-    for (auto const &v : vec)
-    {
-        for (auto const &a : v)
+        for (auto const &a : vec)
         {
-            cout << a << " ";
+            cout << a << endline;
         }
         cout << endl;
+}
+void print2dVector(vector<vector<int>> vec, string endline = " ")
+{
+    for (auto const &v : vec)
+    {
+        print1dVector(v, endline);
     }
 }
 
@@ -56,9 +53,6 @@ bool checkSolution(int size, vector<vector<int>> solution)
             }
         }
     }
-    // for (int i =1;i<size+1;i++){
-    //     cout<<i<<" "<<zadanieJest[i]<<endl;
-    // }
     for (int i = 1; i < size + 1; i++)
     {
         if (zadanieJest[i] < 1)
@@ -70,21 +64,32 @@ bool checkSolution(int size, vector<vector<int>> solution)
     return true;
 }
 
-vector<vector<int>> naiwny(int size)
+vector<vector<int>> listowy(int size, vector<vector<int>> instance)
 {
+    // cout<<size<<endl;
     vector<vector<int>> solution;
-    int g = ceil(size / 4.0);
-    for (int i = 0; i < 4; i++)
-    {
-        vector<int> a;
-        for (int j = 1; j <= g; j++)
-        {
-            int c = j + i * g;
-            if (c > size)
-                break;
-            a.push_back(c);
+    solution.resize(4);
+    // for (int i=0;i<4;i++)solution[i].resize(size);
+    // cout<<instance.size()<<endl;
+    std::sort(instance.begin()+1, instance.end(), 
+     [](vector<int> &a, vector<int> &b) {
+        return a[2] < b[2]; 
+    });
+    // // cout<<instance.size()<<endl;
+    vector<int> machines{ 0,0,0,0 };
+
+    for (int i=1; i<=size;i++){
+        // cout<<i<<endl;
+        int minMachine = 0;
+        int minTime = machines[0];
+        for (int j =1; j<4;j++){
+            if (machines[j]<minTime){
+                minTime = machines[j];
+                minMachine = j;
+            }
         }
-        solution.push_back(a);
+        solution[minMachine].push_back(instance[i][3]);
+        machines[minMachine] = max(machines[minMachine],instance[i][1]) + instance[i][0];
     }
     return solution;
 }
@@ -135,59 +140,34 @@ bool checkInstance(int size, vector<vector<int>> instance)
     return true;
 }
 
-vector<int> split(string a){
- vector<int> res;
- string tmp="";
- for (int i =0 ;i< a.length();i++){
-  if (a[i]==' ' || a[i] == '\n'){
-   if(tmp.length()>0){
-    res.push_back(stoi(tmp));
-    tmp="";
-   }
-  } else {
-      if(isdigit(a[i])) tmp+=a[i];   
-  }
- }
- if(tmp.length()>0){
-    res.push_back(stoi(tmp));
-   }
- return res;
-}
-
 int main()
 {
-    string indexNumbers[] = {
-        "132290",
-    //  "132324",
-    //  "132289",
-    //  "132234",
-    //  "132311",
-    //  "132235",
-    //  "132275",
-    //  "132332",
-    //  "132202",
-    //  "132205",
-    //  "132217",
-    //  "132250",
-    //  "132322",
-    //  "132212",
-    //  "",
-    //  "132264",
-    //  "132078"
-    };
-    string instanceSizes[] = {
-        // "50",
-     "100",
-    //  "150",
-    //  "200",
-    //  "250",
-    //  "300",
-    //  "350",
-    //  "400",
-    //  "450",
-    //  "500"
-     };
-    bool isVerificationRun=true;
+    vector<vector<vector<int>>> instances;
+    vector<long long> listowyTimes;
+    vector<int> listowyResults;
+    vector<long long> memeTimes;
+    vector<int> memeResults;
+    string indexNumbers[] = {"132290",
+     "132324",
+     "132289",
+     "132234",
+     "132311",
+     "132235",
+     "132275",
+     "132332",
+     "132202",
+     "132205",
+     "132217",
+     "132250",
+     "132322",
+     "132212",
+     "116753",
+     "132264",
+     "132078"};
+    // string indexNumbers[] = {"", "", "132289", "132234", "132311", "132235", "132275", "132332", "132202", "132205", "132217", "132250", "132322", "132212", "", "132264", "132078"};
+    
+    string instanceSizes[] = {"50", "100", "150", "200", "250", "300", "350", "400", "450", "500"};
+    int instanceSizesInt[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500};
     for (auto const &ind : indexNumbers)
     {
         for (auto const &num : instanceSizes)
@@ -225,48 +205,49 @@ int main()
                     instanceFile >> d;
                 }
 
-                instance.push_back(vector<int>{p, r, d});
+                instance.push_back(vector<int>{p, r, d, i + 1});
             }
             instanceFile.close();
-            // cout << ind << "_" << num << endl;
-
-            if (!checkInstance(size, instance))
-                continue;
-            // print2dVector(naiwny(size));
-
-            vector<vector<int>> solution;
-            int potencjalneSD;
-            if (isVerificationRun){
-                mySolutionFile.open("./Solucje/out" + ind + "_" + num + ".txt");
-                mySolutionFile >> potencjalneSD;
-                string line;
-                getline(mySolutionFile,line);
-                while (getline(mySolutionFile, line))
-                {
-                    solution.push_back(split(line));
-                }
-                mySolutionFile.close();
-                // print2dVector(solution);
-            } else {
-                solution = naiwny(size);
-            }
-            if (!checkSolution(size, solution))
-            {
-                continue;
-            };
-            print2dVector(instance);
-            print2dVector(solution);
-            int prawdziweSD = caclSD(size, instance, solution);
-            if (isVerificationRun && prawdziweSD != potencjalneSD){
-            cout << "Złe sd " <<prawdziweSD<<endl;
-            }
-            if (!isVerificationRun){
-                cout << caclSD(size, instance, solution) << endl;
-            } else {
-                cout<<size<<" ok"<<endl;
-            }
-            
+            instances.push_back(instance);
+            // if (!checkInstance(size, instance))
+            //     continue;
         }
     }
+    // print2dVector(instances.at(0));
+    int instanceI =-1;
+    for (auto const &ind : indexNumbers)
+    {
+        instanceI++;
+        for (auto const &size : instanceSizesInt)
+        {
+            vector<vector<int>> instance = instances.at(instanceI);
+            auto start = std::chrono::high_resolution_clock::now();
+            // print2dVector(instance);
+            //TODO zglobalizuj wszystko jak młot
+            vector<vector<int>> solution = listowy(size, instance);
+            // // print2dVector(solution);
+            auto elapsed = std::chrono::high_resolution_clock::now() - start;
+            long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+            // listowyTimes.push_back(microseconds);
+            // if (!checkSolution(size, solution)) continue;
+            // // print2dVector(instance);
+            // int sd = caclSD(size, instance, solution);
+            // listowyResults.push_back(sd);
+
+            // cout << sd << endl;
+            // solutionFile.open("./Instancje/out" + ind + "_" + to_string(size) + ".txt");
+            // solutionFile << sd << endl;
+            // for (auto const &v : solution)
+            // {
+            //     for (auto const &a : v)
+            //     {
+            //         solutionFile << a << " ";
+            //     }
+            //     solutionFile << endl;
+            // }
+            // solutionFile.close();
+        }
+    }
+    // print1dVector(listowyResults,"\n");
     return 0;
 }
